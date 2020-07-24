@@ -1,11 +1,13 @@
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 
 public class UserManager
 {
-    private Map<Long, User> users = new HashMap<>();
+    private Semaphore semaphore = new Semaphore(4);
+
+    private Map<Long, User> users = new ConcurrentHashMap<>();
 
     private Long idCounter = 0L;
 
@@ -29,12 +31,21 @@ public class UserManager
         return users.get(userId).isLoggedIn();
     }
 
-    public void loginUser(Long userId) {
+    public void loginUser(Long userId)
+    {
+        try
+        {
+            semaphore.acquire();
+        } catch (InterruptedException ex) {
+            throw new RuntimeException("Interrupted", ex);
+        }
+
         users.get(userId).logIn();
     }
 
     public void logoutUser(Long userId) {
         users.get(userId).logOut();
+        semaphore.release();
     }
 
     public User getById(Long userId) {

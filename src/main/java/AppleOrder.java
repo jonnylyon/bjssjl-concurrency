@@ -1,4 +1,5 @@
 import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AppleOrder
 {
@@ -6,6 +7,8 @@ public class AppleOrder
     private final BuyOrSell buyOrSell;
     private final int numberOfApples;
     private final BigDecimal totalPrice;
+
+    private final AtomicBoolean fulfilled = new AtomicBoolean(false);
 
     public AppleOrder(Long userId, BuyOrSell buyOrSell, int numberOfApples, BigDecimal totalPrice) {
         this.userId = userId;
@@ -32,6 +35,17 @@ public class AppleOrder
     public BigDecimal getTotalPrice()
     {
         return totalPrice;
+    }
+
+    public boolean isFulfilled() {
+        return this.fulfilled.get();
+    }
+
+    public void markAsFulfilled() {
+        boolean alreadyFulfilled = this.fulfilled.getAndSet(true);
+        if (alreadyFulfilled) {
+            throw new RuntimeException("Order was fulfilled twice");
+        }
     }
 
     public boolean matches(AppleOrder otherOrder) {

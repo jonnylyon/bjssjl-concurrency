@@ -9,46 +9,48 @@ public class UserThread implements Runnable
     private final UserManager userManager;
     private final BigDecimal basePrice;
 
-    private final Timer timer;
-
     private Long userId;
 
     public UserThread(OrderBookManager orderBookManager, UserManager userManager, BigDecimal basePrice) {
         this.orderBookManager = orderBookManager;
         this.userManager = userManager;
         this.basePrice = basePrice;
-
-        this.timer = new Timer("User order timer");
     }
 
     @Override public void run()
     {
         this.userId = userManager.registerNewUser(new BigDecimal("10"), 10);
-        userManager.loginUser(this.userId);
 
-        printUser();
+        for (int i = 0; i < 5; i++)
+        {
+            userManager.loginUser(this.userId);
+            System.out.println("User logged in: " + this.userId);
 
-        final TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run()
+            final Timer timer = new Timer("User order timer");
+            final TimerTask timerTask = new TimerTask() {
+                @Override
+                public void run()
+                {
+                    UserThread.this.placeOrder();
+                }
+            };
+            timer.scheduleAtFixedRate(timerTask, 0L, 5L);
+
+            try
             {
-                UserThread.this.placeOrder();
+                int loginTime = new Random().nextInt(20000);
+                Thread.sleep(loginTime);
+
+                timer.cancel();
+                userManager.logoutUser(userId);
+                System.out.println("User logged out: " + this.userId);
+
+                Thread.sleep(40000);
             }
-        };
-        this.timer.scheduleAtFixedRate(timerTask, 0L, 5L);
-
-        try
-        {
-            Thread.sleep(20000);
-
-            this.timer.cancel();
-            userManager.logoutUser(userId);
-
-            Thread.sleep(5000);
-        }
-        catch (InterruptedException e)
-        {
-            throw new RuntimeException(e);
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
 
         printUser();
